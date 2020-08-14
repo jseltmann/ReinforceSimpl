@@ -14,21 +14,27 @@ class Policy(nn.Module):
         self.saved_log_probs = []
         self.rewards = []
 
-    def forward(self, x):
+    def forward(self, x, device="cpu"):
         #x2 = self.model.generate(x, max_length=30, return_probs=True)
-        logits, _ = self.model(x, max_length=30)
+        input_ids = x["input_ids"].to(device)
+        attention_mask = x["attention_mask"].to(device)
+        logits, _ = self.model(input_ids, attention_mask=attention_mask)
         probs = self.softmax(logits)
         return probs
 
     def sample_greedy(self, probs):
-        max_probs, max_inds = torch.max(probs, dim=2)
-        sent = self.tokenizer.decode(max_inds[0], skip_special_tokens=True)
-        sent_prob = torch.prod(max_probs)
+        max_probs_batch, max_inds_batch = torch.max(probs, dim=2)
+        sents = []
+        for max_inds in max_inds_batch:
+            sent = self.tokenizer.decode(max_inds, skip_special_tokens=True)
+            sents.append(sent)
 
-        return sent, sent_prob
+        sent_probs = torch.prod(max_probs_batch, dim=1)
 
-    def tokenize(self, seq):
-        toks = self.tokenizer([seq], return_tensors='pt')['input_ids']
+        return sents, sent_probs
+
+    def tokenize(self, batch):
+        toks = self.tokenizer(batch, padding=True, return_tensors='pt')#['input_ids']
         return toks
 
     def decode(self, sampled):
