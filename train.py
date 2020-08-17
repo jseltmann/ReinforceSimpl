@@ -2,6 +2,7 @@ import transformers as tr
 import torch
 from tqdm import tqdm
 import nltk
+import gc
 
 import load_data as ld
 from policy import Policy
@@ -52,12 +53,15 @@ def train_base(data, reward_fn, model_save_path, device="cpu"):
     """
 
     policy = Policy()
+    policy.train()
     policy.to(device)
 
     optimizer = torch.optim.Adam(policy.parameters(), lr=1e-2)
 
     batches = batchify(data, 8)
     
+    loss0 = torch.tensor(0.).to(device)
+
     for batch in tqdm(batches):
         normal_batch = [pair[0] for pair in batch]
         simple_batch = [pair[1] for pair in batch]
@@ -71,7 +75,7 @@ def train_base(data, reward_fn, model_save_path, device="cpu"):
             reward = reward_fn(sampled, simple)
             rewards.append(reward)
 
-        loss = torch.tensor(0.).to(device)
+        loss = loss0.detach().clone()
         for reward, sent_prob in zip(rewards, sent_probs):
             loss += reward * sent_prob
         loss = -torch.log(loss)

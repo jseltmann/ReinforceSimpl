@@ -11,9 +11,6 @@ class Policy(nn.Module):
         self.softmax = nn.Softmax(dim=2)
         self.tokenizer = tr.BartTokenizer.from_pretrained("facebook/bart-base")
 
-        self.saved_log_probs = []
-        self.rewards = []
-
     def forward(self, x, device="cpu"):
         #x2 = self.model.generate(x, max_length=30, return_probs=True)
         input_ids = x["input_ids"].to(device)

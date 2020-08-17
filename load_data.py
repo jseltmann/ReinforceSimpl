@@ -1,5 +1,6 @@
 import os
 import random
+import nltk
 
 random.seed(42)
 
@@ -18,14 +19,29 @@ def split_wiki_sent(data_dir, split_dir):
     normal_path = os.path.join(data_dir, "normal.aligned")
     simple_path = os.path.join(data_dir, "simple.aligned")
 
+    normal_lines = []
+    simple_lines = []
     with open(normal_path) as nfile:
-        normal_lines = nfile.readlines()
+        #normal_lines = nfile.readlines()
+        for line in nfile:
+            _, _, sent = line.split("\t")
+            sent = sent.split()
+            if len(sent) > 80:
+                continue
+            normal_lines.append(line)
     with open(simple_path) as sfile:
-        simple_lines = sfile.readlines()
+        #simple_lines = sfile.readlines()
+        for line in sfile:
+            _, _, sent = line.split("\t")
+            sent = sent.split()
+            if len(sent) > 80:
+                continue
+            simple_lines.append(line)
 
     zipped = list(zip(normal_lines, simple_lines))
+
     random.shuffle(zipped)
-    
+
     cutoff = int(0.9 * len(zipped))
     train = zipped[:cutoff]
     test = zipped[cutoff:]
@@ -44,8 +60,8 @@ def split_wiki_sent(data_dir, split_dir):
             nfile.write(nline)
             sfile.write(sline)
 
-split_wiki_sent("/data/sentence-aligned.v2",
-                "/data/wiki/sent_aligned_split")
+#split_wiki_sent("/data/sentence-aligned.v2",
+#                "/data/wiki/sent_aligned_split")
 
 
 def load_wiki_sents(data_dir):
