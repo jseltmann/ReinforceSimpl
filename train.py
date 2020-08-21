@@ -1,8 +1,7 @@
 import transformers as tr
 import torch
 from tqdm import tqdm
-import nltk
-import gc
+import math
 
 import load_data as ld
 from policy import Policy
@@ -56,10 +55,10 @@ def train_base(data, reward_fn, model_save_path, device="cpu"):
     policy.train()
     policy.to(device)
 
-    optimizer = torch.optim.Adam(policy.parameters(), lr=1e-2)
+    optimizer = torch.optim.Adam(policy.parameters(), lr=1e-3)
 
     batches = batchify(data, 8)
-    
+
     loss0 = torch.tensor(0.).to(device)
 
     for batch in tqdm(batches):
@@ -67,8 +66,8 @@ def train_base(data, reward_fn, model_save_path, device="cpu"):
         simple_batch = [pair[1] for pair in batch]
 
         inputs_prepared = policy.tokenize(normal_batch)
-        probs = policy(inputs_prepared, device=device)
-        sampled_sents, sent_probs = policy.sample_greedy(probs)
+        sampled_sents, sent_probs = policy(inputs_prepared, device=device)
+        sampled_sents = policy.decode(sampled_sents)
 
         rewards = []
         for sampled, simple in zip(sampled_sents, simple_batch):
@@ -77,15 +76,13 @@ def train_base(data, reward_fn, model_save_path, device="cpu"):
 
         loss = loss0.detach().clone()
         for reward, sent_prob in zip(rewards, sent_probs):
-            loss += reward * sent_prob
-        loss = -torch.log(loss)
+            loss -= reward * torch.log(sent_prob)
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
     torch.save(policy.state_dict(), model_save_path)
-
 
 
 data = ld.load_wiki_sents("/data/wiki/sent_aligned_split/train")

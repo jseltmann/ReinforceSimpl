@@ -7,4 +7,4 @@ def bleu_reward(generated, gold):
     gold = nltk.word_tokenize(gold)
     bleu = sentence_bleu([gold], generated)
     reward = bleu + 0.001
-    return bleu
+    return reward
