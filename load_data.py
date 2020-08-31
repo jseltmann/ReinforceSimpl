@@ -21,24 +21,26 @@ def split_wiki_sent(data_dir, split_dir):
 
     normal_lines = []
     simple_lines = []
+    skip_inds = set()
     with open(normal_path) as nfile:
         #normal_lines = nfile.readlines()
-        for line in nfile:
+        for i, line in enumerate(nfile):
             _, _, sent = line.split("\t")
             sent = sent.split()
             if len(sent) > 80:
-                continue
+                skip_inds.add(i)
             normal_lines.append(line)
     with open(simple_path) as sfile:
         #simple_lines = sfile.readlines()
-        for line in sfile:
+        for i, line in enumerate(sfile):
             _, _, sent = line.split("\t")
             sent = sent.split()
             if len(sent) > 80:
-                continue
+                skip_inds.add(i)
             simple_lines.append(line)
 
     zipped = list(zip(normal_lines, simple_lines))
+    zipped = [p for i, p in enumerate(zipped) if i not in skip_inds]
 
     random.shuffle(zipped)
 
@@ -87,3 +89,24 @@ def load_wiki_sents(data_dir):
 
     pairs = list(zip(nsents, ssents))
     return pairs
+
+
+def save_test(in_path, out_path):
+    """
+    Save test sentences to one sentence per line
+    in order to use with easse.
+    """
+    sents =  []
+    with open(in_path) as in_file:
+        for line in in_file:
+            sent = line.split("\t")[2]
+            sents.append(sent)
+    sents = sents[:200]
+    with open(out_path, "w") as out_file:
+        for sent in sents:
+            out_file.write(sent)
+
+save_test("/data/data/wiki/sent_aligned_split/test/simple.aligned",
+          "/data/data/wiki/sent_aligned_split/test/simple_sents_200.txt")
+save_test("/data/data/wiki/sent_aligned_split/test/normal.aligned",
+          "/data/data/wiki/sent_aligned_split/test/normal_sents_200.txt")
